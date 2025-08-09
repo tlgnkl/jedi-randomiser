@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Джедайские практики — Рандомайзер</title>
+    <meta name="description" content="Serverless рандомайзер джедайских практик с настраиваемыми шансами и прозрачной анимацией" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css?v=2025-08-08-2" />
+    <link rel="icon" href="favicon.ico" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <meta name="theme-color" content="#0e0f12" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">⚔️</div>
+        <div>
+          <h1>Джедайские практики</h1>
+          <p class="subtitle">Простой и честный рандомайзер для утреннего планирования</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="btn-export" class="ghost" title="Экспортировать конфиг">Экспорт</button>
+        <label class="file-btn ghost" title="Импортировать конфиг">
+          <input id="file-import" type="file" accept="application/json" hidden />
+          Импорт
+        </label>
+        <label class="file-btn ghost" title="Импортировать из Markdown">
+          <input id="md-import" type="file" accept=".md,text/markdown" hidden />
+          Импорт .md
+        </label>
+        <button id="btn-reset" class="ghost" title="Сбросить к базовому конфигу">Сброс</button>
+        <button id="btn-share" class="ghost" title="Поделиться текущим конфигом">Поделиться</button>
+        <a id="gh-link" class="ghost" href="#" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel config">
+        <h2>Конфиг</h2>
+        <div class="row">
+          <label for="config-select">Текущий конфиг</label>
+          <select id="config-select" aria-label="Выбор конфига"></select>
+        </div>
+        <div class="row">
+          <input id="config-name" type="text" placeholder="Название конфига" />
+        </div>
+        <div class="row gap">
+          <button id="btn-save" class="primary">Сохранить</button>
+          <button id="btn-save-as">Сохранить как…</button>
+          <button id="btn-delete" class="danger">Удалить</button>
+        </div>
+        <p class="hint">Конфиги хранятся в вашем браузере (localStorage). Можно экспортировать файл и импортировать его позже.</p>
+      </section>
+
+      <section class="panel practices">
+        <div class="panel-header">
+          <h2>Практики</h2>
+          <div class="row">
+            <input id="search" type="search" placeholder="Поиск…" aria-label="Поиск практик" />
+            <button id="btn-add" class="primary" aria-label="Добавить практику">Добавить практику</button>
+          </div>
+        </div>
+        <div id="practices-list" class="list"></div>
+      </section>
+
+      <section class="panel randomizer">
+        <h2>Рандомайзер</h2>
+        <canvas id="prob-canvas" width="960" height="72" aria-label="Полоса вероятностей"></canvas>
+        <div class="row gap">
+          <button id="btn-generate" class="accent" aria-label="Сгенерировать практику">Сгенерировать</button>
+          <label class="inline">
+            <input id="toggle-excluded" type="checkbox" />
+            Исключать отмеченные практики
+          </label>
+        </div>
+        <div class="row gap">
+          <label class="inline"><input id="seed-lock" type="checkbox" /> Фиксированный seed</label>
+          <input id="seed-input" type="text" placeholder="seed" />
+          <label class="inline"><input id="seed-today" type="checkbox" /> Сегодня</label>
+        </div>
+        <div id="transparency" class="transparency">
+          <div class="stat"><span>Сумма весов:</span><strong id="total-weight">—</strong></div>
+          <div class="stat"><span>Случайное число r:</span><strong id="rand-value">—</strong></div>
+          <div class="stat"><span>Выбрана практика:</span><strong id="picked-title">—</strong></div>
+        </div>
+        <div id="protocol" class="protocol">
+          <div class="protocol-header">
+            <h3>Протокол</h3>
+            <button id="btn-clear-log" class="ghost" aria-label="Очистить протокол">Очистить</button>
+          </div>
+          <div class="protocol-body">
+            <table id="log-table">
+              <thead><tr><th>Время</th><th>r/Σ</th><th>Практика</th><th>Интервал</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="result" class="result hidden" aria-live="polite" aria-atomic="true" role="status">
+          <div class="result-card">
+            <img id="result-img" alt="" />
+            <div class="result-content">
+              <h3 id="result-title"></h3>
+              <p id="result-desc"></p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <canvas id="fx-canvas" class="fx-canvas"></canvas>
+    <div id="toasts" class="toasts" aria-live="polite" aria-atomic="false"></div>
+
+    <dialog id="dlg-practice" class="dialog">
+      <form method="dialog" id="practice-form">
+        <h3 id="dlg-title">Практика</h3>
+        <div class="grid2">
+          <label>Заголовок
+            <input name="title" type="text" required />
+          </label>
+          <label>Вес (шанс)
+            <input name="weight" type="number" min="0" step="0.1" value="1" />
+          </label>
+        </div>
+        <label>Описание
+          <textarea name="description" rows="6" placeholder="Текст практики"></textarea>
+        </label>
+        <div class="grid2">
+          <label>Изображение (URL)
+            <input name="imageUrl" type="url" placeholder="https://…" />
+          </label>
+          <label class="file-btn">или загрузить файл
+            <input id="img-file" type="file" accept="image/*" />
+          </label>
+        </div>
+        <menu class="dialog-actions">
+          <button value="cancel" class="ghost">Отмена</button>
+          <button value="ok" class="primary">Сохранить</button>
+        </menu>
+      </form>
+    </dialog>
+
+    <template id="practice-item-tpl">
+      <div class="practice-item" draggable="true">
+        <div class="drag" title="Перетащите, чтобы изменить порядок">⠿</div>
+        <img class="thumb" alt="" />
+        <div class="left">
+          <input type="checkbox" class="exclude" title="Исключить из выпадения" />
+          <input type="text" class="title" />
+        </div>
+        <div class="right">
+          <span class="percent" title="Вероятность">—%</span>
+          <label class="weight-label">Вес
+            <input type="number" class="weight" min="0" step="0.1" />
+          </label>
+          <button class="ghost btn-expand" title="Описание" aria-label="Показать описание">▼</button>
+          <button class="ghost btn-edit" title="Редактировать" aria-label="Редактировать практику">✎</button>
+          <button class="ghost btn-delete" title="Удалить" aria-label="Удалить практику">🗑</button>
+        </div>
+        <div class="details">
+          <div class="details-body">
+            <div class="desc"></div>
+            <div class="hint">Можно перетащить изображение на карточку, чтобы заменить его.</div>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

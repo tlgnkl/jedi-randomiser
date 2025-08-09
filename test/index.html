@@ -1,0 +1,762 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Джедайские практики — Рандомайзер</title>
+  <meta name="description" content="Рандомайзер джедайских практик: честная генерация, точные веса, аккуратные изображения, приятные анимации." />
+  <style>
+    :root {
+      --bg: #0b0d10;
+      --panel: #12151a;
+      --text: #e7ecf3;
+      --muted: #9aa6b2;
+      --accent: #8de1ff;
+      --accent-2: #a2ffce;
+      --warning: #ffd26f;
+      --danger: #ff9ca3;
+      --ok: #83ffa7;
+      --border: #1d232b;
+      --shadow: 0 8px 24px rgba(0,0,0,.35);
+      --radius: 14px;
+      --radius-sm: 10px;
+      --focus: 0 0 0 2px rgba(141,225,255,.25), 0 0 0 6px rgba(141,225,255,.12);
+      --font: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+    }
+    [data-theme="light"] {
+      --bg: #fbfdff;
+      --panel: #ffffff;
+      --text: #0f141a;
+      --muted: #536471;
+      --accent: #0ea5e9;
+      --accent-2: #22c55e;
+      --warning: #b45309;
+      --danger: #dc2626;
+      --ok: #16a34a;
+      --border: #e6eef5;
+      --shadow: 0 6px 20px rgba(2,33,61,.08);
+      --focus: 0 0 0 3px rgba(14,165,233,.2);
+    }
+    * { box-sizing: border-box }
+    html, body { height: 100% }
+    body {
+      margin: 0; background: radial-gradient(1200px 800px at 75% -10%, rgba(141,225,255,.06), transparent),
+        radial-gradient(900px 600px at -10% 20%, rgba(162,255,206,.05), transparent), var(--bg);
+      color: var(--text); font-family: var(--font); letter-spacing: .2px;
+      -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+    }
+    .app { max-width: 1100px; margin: 28px auto; padding: 0 16px 48px; }
+    header { display:flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+    .brand { display:flex; align-items:center; gap:12px }
+    .logo {
+      width: 36px; height: 36px; border-radius: 12px;
+      background: conic-gradient(from 210deg, var(--accent), var(--accent-2));
+      box-shadow: 0 0 0 3px rgba(141,225,255,.18), inset 0 0 20px rgba(255,255,255,.2);
+    }
+    h1 { font-size: 18px; margin: 0 }
+    .muted { color: var(--muted) }
+
+    .toolbar { display:flex; flex-wrap: wrap; gap: 8px }
+    .btn {
+      appearance:none; border:1px solid var(--border); background: var(--panel); color: var(--text);
+      padding: 9px 12px; border-radius: var(--radius-sm); cursor: pointer; box-shadow: var(--shadow);
+      display:inline-flex; align-items:center; gap:8px; transition: transform .06s ease, border-color .2s ease, background .2s ease;
+      user-select:none; font-size: 14px;
+    }
+    .btn:hover { transform: translateY(-1px) }
+    .btn:active { transform: translateY(0) scale(.98) }
+    .btn.primary { background: linear-gradient(180deg, rgba(141,225,255,.18), rgba(141,225,255,.08)); border-color: rgba(141,225,255,.35) }
+    .btn.ghost { background: transparent }
+    .btn.danger { border-color: rgba(220,38,38,.35) }
+    .btn.small { padding: 6px 9px; font-size: 13px }
+    .pill { padding: 6px 10px; border-radius: 999px; border:1px solid var(--border); color: var(--muted); background: var(--panel) }
+
+    .grid { display:grid; grid-template-columns: 1.05fr .95fr; gap: 16px; }
+    @media (max-width: 980px) { .grid { grid-template-columns: 1fr } }
+
+    .card {
+      background: var(--panel); border:1px solid var(--border);
+      border-radius: var(--radius); box-shadow: var(--shadow);
+    }
+    .card h2 { margin: 0; padding: 16px 16px 0; font-size: 16px }
+    .card .sub { padding: 0 16px 10px; color: var(--muted); font-size: 13px }
+    .card .body { padding: 16px }
+
+    .row { display:flex; gap: 12px; flex-wrap: wrap; align-items: center }
+    .row > * { flex: 1 }
+
+    .field { display:flex; flex-direction: column; gap: 6px }
+    .field label { font-size: 12px; color: var(--muted) }
+    input[type="text"], input[type="number"], textarea, select {
+      width: 100%; padding: 10px 12px; border-radius: 10px; border:1px solid var(--border); background: transparent; color: var(--text);
+      outline: none; transition: box-shadow .2s ease, border-color .2s ease;
+    }
+    input:focus, textarea:focus, select:focus { box-shadow: var(--focus); border-color: transparent }
+    textarea { min-height: 96px; resize: vertical }
+    .switch { display:flex; align-items:center; gap: 8px; cursor: pointer; user-select:none }
+    .switch input { appearance: none; width: 38px; height: 22px; background: var(--border); border-radius: 999px; position: relative; transition: background .2s }
+    .switch input::after { content:""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background: var(--text); border-radius: 50%; transition: transform .18s ease }
+    .switch input:checked { background: rgba(141,225,255,.35) }
+    .switch input:checked::after { transform: translateX(16px) }
+
+    .list { display: grid; gap: 10px; }
+    .item {
+      display:grid; grid-template-columns: 1.3fr .7fr .6fr auto; gap: 10px; align-items: start;
+      padding: 12px; border:1px solid var(--border); border-radius: 12px; background: rgba(255,255,255,.02);
+      transition: border-color .2s ease, background .2s ease, transform .06s ease;
+    }
+    @media (max-width: 760px) { .item { grid-template-columns: 1fr 1fr; } }
+    .item:hover { transform: translateY(-1px) }
+    .item .title { display:flex; gap: 8px; align-items: center }
+    .item .weight { display:flex; gap:6px; align-items:center }
+    .wstep { display:flex; gap:6px }
+    .wstep .mini { width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--border); border-radius:8px; background: transparent; color: var(--text); }
+    .item .block { display:flex; align-items: center; gap:6px; color: var(--muted) }
+    .item .desc { grid-column: 1 / -1 }
+    .item .img { display:grid; grid-template-columns: 1fr auto auto auto; gap:8px; align-items:center }
+    .item.highlight { outline: 2px solid var(--accent); box-shadow: 0 0 0 6px rgba(141,225,255,.12) inset }
+    .item.glow { animation: glow 800ms ease-out 1 }
+    @keyframes glow {
+      0% { box-shadow: 0 0 0 0 rgba(141,225,255,.0), 0 0 0 0 rgba(162,255,206,.0) }
+      30% { box-shadow: 0 0 0 10px rgba(141,225,255,.12), 0 0 0 20px rgba(162,255,206,.06) }
+      100% { box-shadow: 0 0 0 0 rgba(141,225,255,.0), 0 0 0 0 rgba(162,255,206,.0) }
+    }
+
+    .thumb {
+      width: 56px; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 10px;
+      border:1px solid var(--border); background: #0f1318;
+    }
+    .dropzone {
+      border:1px dashed var(--border); border-radius: 10px; padding: 6px 8px; color: var(--muted);
+      text-align:center; min-width: 120px;
+    }
+    .dropzone.drag { border-color: var(--accent); color: var(--accent) }
+
+    .result {
+      display: grid; gap: 10px; border:1px dashed var(--border); border-radius: 12px; padding: 12px;
+      background: linear-gradient(180deg, rgba(162,255,206,.06), rgba(141,225,255,.03));
+    }
+    .hero { display:flex; gap: 12px; align-items: center; }
+    .hero .thumb { width: 72px }
+    .result .name { font-weight: 700; font-size: 17px }
+    .result .meta { color: var(--muted); font-size: 12px }
+
+    .prob { margin-top: 8px; border-top:1px dashed var(--border); padding-top: 8px; }
+    .prob table { width:100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    .prob th, .prob td { text-align:left; padding: 6px 4px; border-bottom:1px solid var(--border) }
+    .prob td.num { text-align: right; color: var(--muted) }
+    .bar { height: 6px; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); opacity: .5 }
+
+    .small { font-size: 12px; color: var(--muted) }
+    .toast {
+      position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%);
+      background: var(--panel); border:1px solid var(--border); color: var(--text);
+      padding: 10px 14px; border-radius: 999px; box-shadow: var(--shadow); opacity: 0; pointer-events:none;
+      transition: opacity .25s ease, transform .25s ease;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px) }
+    .kpi { display:flex; align-items:center; gap:8px; }
+    .kpi .dot { width:8px; height:8px; border-radius:50%; background: var(--accent-2) }
+    .disclaimer { margin-top: 6px; color: var(--muted); font-size: 12px }
+    .details { margin-top: 8px; display:none }
+    .details.show { display:block }
+    code.inline { background: rgba(141,225,255,.12); border:1px solid var(--border); padding: 2px 6px; border-radius: 6px }
+    .divider { height: 1px; background: var(--border); margin: 10px 0 }
+    .note { background: rgba(141,225,255,.08); border:1px dashed rgba(141,225,255,.3); border-radius: 10px; padding: 10px; color: var(--muted) }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <header>
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>Джедайские практики · Рандомайзер</h1>
+          <div class="muted" style="font-size:12px">Честный выбор. Точные веса. Аккуратные изображения.</div>
+        </div>
+      </div>
+      <div class="toolbar">
+        <select id="configSelect" title="Активный конфиг" class="pill"></select>
+        <button class="btn primary" id="saveBtn">Сохранить</button>
+        <button class="btn" id="saveAsBtn">Сохранить как…</button>
+        <button class="btn" id="exportBtn">Экспорт</button>
+        <button class="btn" id="importBtn">Импорт</button>
+        <button class="btn ghost danger" id="resetBtn" title="Сброс к предустановленному">Сброс</button>
+        <button class="btn ghost" id="themeBtn" title="Сменить тему">🌗 Тема</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Генерация</h2>
+        <div class="sub">Нажмите «Сгенерировать». Анимация — с замедлением, процесс — прозрачен.</div>
+        <div class="body">
+          <div class="row" style="align-items: stretch;">
+            <div class="field">
+              <label>Параметры выбора</label>
+              <div class="row">
+                <label class="switch" title="Игнорировать заблокированные">
+                  <input type="checkbox" id="respectBlocked" checked />
+                  <span>Исключить заблокированные</span>
+                </label>
+                <label class="switch" title="Показывать подробности рандома">
+                  <input type="checkbox" id="showDetails" />
+                  <span>Показать подробности</span>
+                </label>
+              </div>
+            </div>
+            <div style="display:flex; justify-content:flex-end; align-items:center; gap:8px">
+              <button class="btn primary" id="rollBtn">🎲 Сгенерировать</button>
+            </div>
+          </div>
+
+          <div id="result" class="result" aria-live="polite">
+            <div class="hero">
+              <img id="resultImg" class="thumb" alt="Иллюстрация практики" />
+              <div>
+                <div class="name" id="resultTitle">Пока нет результата</div>
+                <div class="meta" id="resultMeta">Нажмите «Сгенерировать», чтобы начать.</div>
+              </div>
+            </div>
+            <div id="resultDesc" class="small"></div>
+            <div class="details" id="details">
+              <div class="divider"></div>
+              <div class="small" id="randomInfo"></div>
+              <div class="prob">
+                <table id="probTable"></table>
+              </div>
+            </div>
+            <div class="disclaimer">Выбор выполняется с помощью <code class="inline">window.crypto</code>, затем анимация подстраивается под результат.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Практики</h2>
+        <div class="sub">Редактируйте заголовки, описания, веса, блокировку и изображения. Перетаскивайте файл на карточку, чтобы загрузить картинку.</div>
+        <div class="body">
+          <div class="row" style="justify-content: space-between;">
+            <div class="kpi"><span class="dot"></span><span id="kpiText" class="muted small">—</span></div>
+            <div style="display:flex; gap: 8px; align-items:center">
+              <label class="switch" title="Держать сумму весов ровно 100">
+                <input type="checkbox" id="lockSum" />
+                <span>Держать сумму = 100</span>
+              </label>
+              <button class="btn small" id="addBtn">+ Добавить практику</button>
+              <button class="btn small" id="normalizeBtn" title="Сделать веса ровно 100 по пропорциям">Нормализовать</button>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="list" id="list"></div>
+          <div class="note" style="margin-top:10px">
+            Изображение сжимается локально до ~1024px (качество 0.9), хранится в вашем браузере. Для синхронизации используйте «Экспорт»/«Импорт».
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Сохранено</div>
+
+  <input type="file" id="fileInput" accept="application/json" style="display:none" />
+  <script>
+    // -------- Utilities --------
+    const $ = (sel, root = document) => root.querySelector(sel);
+    const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+    const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
+    const nowISO = () => new Date().toISOString();
+    const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
+    const toast = (msg, ms = 1600) => { const t=$('#toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), ms); };
+    const getRandomFloat = () => { const arr = new Uint32Array(1); crypto.getRandomValues(arr); return arr[0] / 2**32; };
+
+    async function downscaleImage(file, maxSize = 1024, quality = 0.9, mime = 'image/jpeg') {
+      const dataURL = await fileToDataURL(file);
+      const img = await loadImage(dataURL);
+      const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+      const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, w, h);
+      return canvas.toDataURL(mime, quality);
+    }
+    function loadImage(src) { return new Promise((res, rej) => { const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
+    function fileToDataURL(file) { return new Promise((res, rej) => { const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); }); }
+
+    // -------- Storage --------
+    const LS_KEYS = { configs: 'jedi_configs', activeId: 'jedi_active_config_id', theme: 'jedi_theme', lock: 'jedi_lock_sum_100' };
+
+    const DefaultConfig = {
+      id: 'preset-2',
+      name: 'Джедай-утро v2',
+      updatedAt: nowISO(),
+      items: [
+        {
+          id: uid(),
+          title: 'Практика Расхламинго',
+          description: [
+            '1. Сядьте спокойно, отложите в сторону источники лучей отупения.',
+            '2. Выберите первую практику расхламления, за которую зацепился взгляд.',
+            '3. Выполните её и насладитесь результатом.'
+          ].join('\\n\\n'),
+          weight: 12, blocked: false,
+          image: 'CleanShot 2025-08-07 at 22.15.48@2x.png'
+        },
+        {
+          id: uid(),
+          title: 'Практика 2 минуты ничего не делать',
+          description: [
+            'Смысл этой практики — выключить хватательный рефлекс ума.',
+            '',
+            '1. Сядьте спокойно, отложите в сторону источники лучей отупения.',
+            '2. Просто сидите и делайте ничего.',
+            '3. Наблюдайте, как мысли одна за другой сменяют друг друга, и позволяйте этому быть.'
+          ].join('\\n'),
+          weight: 12, blocked: false, image: ''
+        },
+        {
+          id: uid(),
+          title: 'Практика Поковыряться в «Позже»',
+          description: [
+            'Смысл этой практики — выключить хватательный рефлекс ума.',
+            '',
+            '1. Откройте свой список с отложенными задачами.',
+            '2. Используйте «тест волшебной феи»: посмотрите на откладываемую задачу и подумайте, будет ли хорошо, если волшебная фея выполнит её прямо здесь и сейчас?',
+            '3. Повторите действие для остальных таких задач.'
+          ].join('\\n'),
+          weight: 12, blocked: false, image: ''
+        },
+        {
+          id: uid(), title: 'Утренний фокус',
+          description: '10 минут без телефона. Дыхание 4-7-8. Записать 1 главный фокус дня.',
+          weight: 10, blocked: false, image: ''
+        },
+        {
+          id: uid(), title: 'Скан тела',
+          description: 'Медленный скан от макушки до стоп. Замечайте напряжение, выдыхайте в него.',
+          weight: 10, blocked: false, image: ''
+        },
+        {
+          id: uid(), title: 'Письмо 750 слов',
+          description: 'Поток сознания без остановок. Не редактировать. Выплеснуть шум из головы.',
+          weight: 10, blocked: false, image: ''
+        }
+      ],
+    };
+
+    function loadState() {
+      let configs = [];
+      try { const raw = localStorage.getItem(LS_KEYS.configs); configs = raw ? JSON.parse(raw) : []; } catch {}
+      if (!configs.length) {
+        configs = [DefaultConfig];
+        localStorage.setItem(LS_KEYS.configs, JSON.stringify(configs));
+        localStorage.setItem(LS_KEYS.activeId, DefaultConfig.id);
+      }
+      const activeId = localStorage.getItem(LS_KEYS.activeId) || configs[0].id;
+      const theme = localStorage.getItem(LS_KEYS.theme) || 'dark';
+      const lock = localStorage.getItem(LS_KEYS.lock) === '1';
+      document.documentElement.dataset.theme = theme;
+      return { configs, activeId, theme, lock };
+    }
+    function saveConfigs(configs, activeId) {
+      localStorage.setItem(LS_KEYS.configs, JSON.stringify(configs));
+      if (activeId) localStorage.setItem(LS_KEYS.activeId, activeId);
+    }
+    function setTheme(theme) { document.documentElement.dataset.theme = theme; localStorage.setItem(LS_KEYS.theme, theme); }
+
+    // -------- State --------
+    const state = {
+      configs: [], activeId: '', dirty: false, lockSum100: false,
+      get active() { return state.configs.find(c => c.id === state.activeId) }
+    };
+
+    // -------- Rendering --------
+    function renderConfigSelect() {
+      const sel = $('#configSelect'); sel.innerHTML = '';
+      state.configs.forEach(c => {
+        const opt = document.createElement('option'); opt.value = c.id; opt.textContent = c.name;
+        if (c.id === state.activeId) opt.selected = true; sel.appendChild(opt);
+      });
+    }
+
+    function escapeHtml(str = '') {
+      return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+    }
+
+    function renderList() {
+      const list = $('#list'); const cfg = state.active; if (!cfg) return;
+      const total = cfg.items.filter(i => !i.blocked && i.weight > 0).reduce((s,i)=>s+i.weight,0);
+      $('#kpiText').textContent = total > 0 ? `Сумма активных весов: ${total}` : 'Нет активных практик для генерации';
+
+      list.innerHTML = '';
+      cfg.items.forEach(item => {
+        const el = document.createElement('div'); el.className = 'item'; el.dataset.id = item.id;
+        el.innerHTML = `
+          <div class="title">
+            <input type="text" value="${escapeHtml(item.title)}" aria-label="Заголовок" />
+          </div>
+          <div class="weight">
+            <div class="field" style="flex:1">
+              <label>Вес</label>
+              <input type="number" min="0" step="1" value="${item.weight}" aria-label="Вес" />
+            </div>
+            <div class="wstep">
+              <button class="mini" data-action="wminus" title="-1">−</button>
+              <button class="mini" data-action="wplus" title="+1">+</button>
+            </div>
+          </div>
+          <div class="block">
+            <input type="checkbox" ${item.blocked ? 'checked' : ''} aria-label="Заблокировать" />
+            <span>Блок</span>
+          </div>
+          <div style="display:flex; gap:6px; justify-content:flex-end">
+            <button class="btn small" data-action="up" title="Выше">↑</button>
+            <button class="btn small" data-action="down" title="Ниже">↓</button>
+            <button class="btn small danger" data-action="del" title="Удалить">✕</button>
+          </div>
+          <div class="desc">
+            <div class="field">
+              <label>Описание</label>
+              <textarea aria-label="Описание">${escapeHtml(item.description)}</textarea>
+            </div>
+          </div>
+          <div class="img">
+            <div class="field" style="flex:1">
+              <label>Изображение (URL)</label>
+              <input type="text" placeholder="https://…" value="${item.image && !item.image.startsWith('data:') ? escapeHtml(item.image) : ''}" />
+            </div>
+            <div><button class="btn small" data-action="upload">Загрузить</button></div>
+            <div><button class="btn small" data-action="clearimg">Очистить</button></div>
+            <div>
+              ${item.image ? `<img src="${item.image}" alt="" class="thumb" />` : `<div class="dropzone small">Перетащите файл</div>`}
+            </div>
+          </div>
+        `;
+
+        const [titleInput] = el.querySelectorAll('.title input');
+        const [weightInput] = el.querySelectorAll('.weight input');
+        const [blockInput] = el.querySelectorAll('.block input');
+        const [descInput] = el.querySelectorAll('.desc textarea');
+        const urlInput = el.querySelector('.img input[type="text"]');
+        const dropzone = el.querySelector('.dropzone');
+
+        titleInput.addEventListener('input', e => { item.title = e.target.value; markDirty(); });
+        weightInput.addEventListener('input', e => { onWeightChange(item, parseInt(e.target.value || '0', 10)); });
+        blockInput.addEventListener('change', e => { item.blocked = !!e.target.checked; markDirty(); updateProbPreview(); });
+        descInput.addEventListener('input', e => { item.description = e.target.value; markDirty(); });
+        urlInput.addEventListener('input', e => { item.image = e.target.value.trim(); markDirty(); renderList(); });
+
+        el.addEventListener('click', async (e) => {
+          const btn = e.target.closest('button'); if (!btn) return;
+          const action = btn.dataset.action;
+          if (action === 'upload') {
+            const input = document.createElement('input');
+            input.type = 'file'; input.accept = 'image/*';
+            input.onchange = async () => {
+              const file = input.files && input.files[0];
+              if (file) {
+                item.image = await downscaleImage(file, 1024, 0.9, 'image/jpeg');
+                markDirty(); renderList(); toast('Изображение загружено');
+              }
+            };
+            input.click();
+          } else if (action === 'clearimg') {
+            item.image = ''; markDirty(); renderList();
+          } else if (action === 'del') {
+            if (confirm('Удалить практику?')) {
+              const cfg = state.active; cfg.items = cfg.items.filter(i => i.id !== item.id);
+              markDirty(); renderList(); updateProbPreview();
+            }
+          } else if (action === 'up' || action === 'down') {
+            const cfg = state.active; const idx = cfg.items.findIndex(i => i.id === item.id);
+            const swapWith = action === 'up' ? idx - 1 : idx + 1;
+            if (swapWith >= 0 && swapWith < cfg.items.length) { [cfg.items[idx], cfg.items[swapWith]] = [cfg.items[swapWith], cfg.items[idx]]; markDirty(); renderList(); }
+          } else if (action === 'wminus' || action === 'wplus') {
+            const v = parseInt(weightInput.value || '0', 10) + (action === 'wplus' ? 1 : -1);
+            onWeightChange(item, Math.max(0, v));
+            weightInput.value = item.weight;
+          }
+        });
+
+        if (dropzone) {
+          ['dragenter','dragover'].forEach(evt => dropzone.addEventListener(evt, ev => { ev.preventDefault(); dropzone.classList.add('drag'); }));
+          ['dragleave','drop'].forEach(evt => dropzone.addEventListener(evt, ev => { ev.preventDefault(); dropzone.classList.remove('drag'); }));
+          dropzone.addEventListener('drop', async ev => {
+            const file = [...ev.dataTransfer.files][0];
+            if (file && file.type.startsWith('image/')) {
+              item.image = await downscaleImage(file, 1024, 0.9, 'image/jpeg');
+              markDirty(); renderList(); toast('Изображение загружено');
+            }
+          });
+        }
+
+        list.appendChild(el);
+      });
+      updateProbPreview();
+    }
+
+    function markDirty() { state.dirty = true; $('#saveBtn').textContent = 'Сохранить*'; }
+
+    // -------- Probabilities & Roll --------
+    function getActiveWeightedItems() {
+      const cfg = state.active;
+      const respectBlocked = $('#respectBlocked').checked;
+      const items = cfg.items.filter(i => (!respectBlocked || !i.blocked) && i.weight > 0);
+      const total = items.reduce((s, i) => s + i.weight, 0);
+      const probs = items.map(i => ({ id: i.id, title: i.title, weight: i.weight, p: total ? i.weight / total : 0 }));
+      return { items, probs, total };
+    }
+
+    function updateProbPreview() {
+      const { probs, total } = getActiveWeightedItems();
+      const table = $('#probTable'); table.innerHTML = '';
+      if (!probs.length) { table.innerHTML = '<tr><td class="small muted">Нет активных практик</td></tr>'; return; }
+      const header = document.createElement('tr');
+      header.innerHTML = '<th>Практика</th><th class="num">Вес</th><th class="num">Вероятность</th><th style="width:140px"></th>';
+      table.appendChild(header);
+      probs.forEach(p => {
+        const tr = document.createElement('tr');
+        const pct = (p.p*100);
+        tr.innerHTML = `
+          <td>${escapeHtml(p.title)}</td>
+          <td class="num">${p.weight}</td>
+          <td class="num">${pct.toFixed(2)}%</td>
+          <td><div class="bar" style="width:${Math.min(100, Math.max(4, pct))}%"></div></td>`;
+        table.appendChild(tr);
+      });
+      $('#randomInfo').innerHTML = `Сумма активных весов: <b>${total}</b>. Формула: <code class="inline">pᵢ = wᵢ / Σw</code>.`;
+    }
+
+    function animateSelectionFlow(pathIds, finalId) {
+      const rows = $$('#list .item'); let step = 0; const totalSteps = pathIds.length;
+      return new Promise(resolve => {
+        const start = performance.now(); const duration = 1800 + Math.min(1400, totalSteps * 12);
+        const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+        function frame(now) {
+          const t = clamp((now - start) / duration, 0, 1);
+          const easedIndex = Math.floor(easeOutCubic(t) * (totalSteps - 1));
+          if (easedIndex !== step) {
+            step = easedIndex; rows.forEach(r => r.classList.remove('highlight'));
+            const id = pathIds[step]; const row = rows.find(r => r.dataset.id === id);
+            if (row) { row.classList.add('highlight'); row.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+          }
+          if (t < 1) requestAnimationFrame(frame); else {
+            rows.forEach(r => r.classList.remove('highlight'));
+            const finalRow = rows.find(r => r.dataset.id === finalId);
+            if (finalRow) { finalRow.classList.add('glow'); setTimeout(() => finalRow.classList.remove('glow'), 900); }
+            resolve();
+          }
+        }
+        requestAnimationFrame(frame);
+      });
+    }
+
+    function rollOnce() {
+      const detailsEl = $('#details'); const showDet = $('#showDetails').checked;
+      detailsEl.classList.toggle('show', showDet);
+      const { items, probs, total } = getActiveWeightedItems();
+      if (!items.length || total === 0) { toast('Нет доступных практик'); return; }
+      let acc = 0; const cdf = probs.map(p => { acc += p.p; return { id: p.id, title: p.title, c: acc }; });
+      const U = getRandomFloat();
+      const hit = cdf.find(x => U < x.c) || cdf[cdf.length - 1];
+      const chosen = state.active.items.find(i => i.id === hit.id);
+      const visibleIds = state.active.items.map(i => i.id);
+      const cycles = 2 + Math.floor(Math.random() * 2);
+      const path = []; for (let c=0;c<cycles;c++) path.push(...visibleIds);
+      const finalIndex = visibleIds.indexOf(chosen.id); if (finalIndex >= 0) path.push(...visibleIds.slice(0, finalIndex+1));
+      if (showDet) {
+        $('#randomInfo').innerHTML = `U = <b>${U.toFixed(6)}</b> → попали в интервал CDF элемента <b>${escapeHtml(chosen.title)}</b>. Активно: <b>${items.length}</b>, Σвесов = <b>${total}</b>.`;
+        updateProbPreview();
+      }
+      $('#rollBtn').disabled = true;
+      animateSelectionFlow(path, chosen.id).then(() => { $('#rollBtn').disabled = false; showResult(chosen); });
+    }
+
+    function showResult(item) {
+      $('#resultTitle').textContent = item.title;
+      $('#resultMeta').textContent = 'Выбор оформлен. Да пребудет с вами Сила.';
+      $('#resultDesc').textContent = item.description || '';
+      const img = $('#resultImg');
+      if (item.image) { img.src = item.image; img.style.display = ''; }
+      else {
+        img.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72"><rect width="100%" height="100%" rx="10" fill="#1d232b"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#9aa6b2" font-family="Inter, Segoe UI, Arial" font-size="11">JEDI</text></svg>`);
+        img.style.display = '';
+      }
+    }
+
+    // -------- Weights logic --------
+    function onWeightChange(item, newValue) {
+      const cfg = state.active;
+      item.weight = Math.max(0, Number.isFinite(newValue) ? newValue : 0);
+      // Если элемент заблокирован — он не участвует; режим lockSum действует только на активных
+      if (state.lockSum100 && !item.blocked) enforceSum100(item.id);
+      markDirty();
+      renderList();
+    }
+
+    // Hamilton apportionment: распределение целых так, чтобы сумма ровно target
+    function hamiltonApportion(weights, target) {
+      const sum = weights.reduce((s,w)=>s+w,0);
+      if (target <= 0 || sum <= 0) return weights.map(_=>0);
+      const raw = weights.map(w => (w / sum) * target);
+      const floors = raw.map(x => Math.floor(x));
+      let assigned = floors.reduce((s,x)=>s+x,0);
+      const remainders = raw.map((x,i) => ({ i, r: x - floors[i] }));
+      remainders.sort((a,b) => b.r - a.r || a.i - b.i);
+      const alloc = floors.slice();
+      let idx = 0;
+      while (assigned < target && idx < remainders.length) {
+        alloc[remainders[idx].i] += 1; assigned += 1; idx += 1;
+      }
+      return alloc;
+    }
+
+    function enforceSum100(changedId) {
+      const cfg = state.active;
+      const active = cfg.items.filter(i => !i.blocked && i.weight >= 0);
+      if (active.length === 0) return;
+
+      const changed = active.find(i => i.id === changedId);
+      if (!changed) return;
+
+      // Ограничим изменённый элемент, если он > 100
+      if (changed.weight > 100) changed.weight = 100;
+
+      const others = active.filter(i => i.id !== changedId);
+      const targetForOthers = Math.max(0, 100 - changed.weight);
+      const othersSum = others.reduce((s,i)=>s+i.weight,0);
+
+      if (others.length === 0) {
+        // Один активный элемент: просто кап к 100
+        changed.weight = Math.min(changed.weight, 100);
+        return;
+      }
+
+      if (othersSum === 0) {
+        // Все остальные нули — оставляем так, подрезаем изменённый при необходимости
+        changed.weight = Math.min(changed.weight, 100);
+        return;
+      }
+
+      const baseWeights = others.map(i => i.weight);
+      const alloc = hamiltonApportion(baseWeights, targetForOthers);
+      // Применяем новые веса к "другим"
+      others.forEach((it, k) => it.weight = alloc[k]);
+    }
+
+    function normalizeWeights(targetSum = 100) {
+      const cfg = state.active;
+      const active = cfg.items.filter(i => !i.blocked && i.weight > 0);
+      if (active.length === 0) return;
+      const current = active.map(i => i.weight);
+      const alloc = hamiltonApportion(current, targetSum);
+      active.forEach((i, idx) => i.weight = alloc[idx]);
+      markDirty(); renderList(); toast('Веса нормализованы до 100');
+    }
+
+    // -------- Configs & persistence --------
+    function addPractice() {
+      const cfg = state.active;
+      cfg.items.push({ id: uid(), title: 'Новая практика', description: '', weight: 5, blocked: false, image: '' });
+      markDirty(); renderList();
+    }
+
+    function saveActive(forceName) {
+      let cfg = state.active;
+      if (!cfg) return;
+      if (forceName) {
+        const name = prompt('Название для нового конфига:', cfg.name + ' (копия)');
+        if (!name) return;
+        const clone = JSON.parse(JSON.stringify(cfg));
+        clone.id = uid(); clone.name = name; clone.updatedAt = nowISO();
+        state.configs.push(clone); state.activeId = clone.id;
+      } else {
+        cfg.updatedAt = nowISO();
+      }
+      saveConfigs(state.configs, state.activeId);
+      state.dirty = false; $('#saveBtn').textContent = 'Сохранить';
+      renderConfigSelect(); toast('Конфиг сохранён');
+    }
+
+    function exportConfigs() {
+      const blob = new Blob([JSON.stringify({ configs: state.configs, activeId: state.activeId }, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'jedi-practices-config.json'; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importConfigs() {
+      const input = $('#fileInput');
+      input.onchange = async () => {
+        const file = input.files?.[0]; if (!file) return;
+        try {
+          const text = await file.text(); const data = JSON.parse(text);
+          if (!data || !Array.isArray(data.configs)) throw new Error('Неверный формат');
+          state.configs = data.configs; state.activeId = data.activeId || data.configs[0].id;
+          saveConfigs(state.configs, state.activeId);
+          renderConfigSelect(); renderList(); toast('Импортировано');
+        } catch (e) { alert('Не удалось импортировать: ' + e.message); }
+        finally { input.value = ''; }
+      };
+      input.click();
+    }
+
+    function resetToDefault() {
+      if (!confirm('Сбросить к предустановленному конфигу? Ваши данные будут перезаписаны.')) return;
+      state.configs = [DefaultConfig]; state.activeId = DefaultConfig.id;
+      saveConfigs(state.configs, state.activeId);
+      renderConfigSelect(); renderList(); toast('Сброшено');
+    }
+
+    // -------- Init --------
+    function init() {
+      const { configs, activeId, theme, lock } = loadState();
+      state.configs = configs;
+      state.activeId = activeId;
+      document.documentElement.dataset.theme = theme;
+      state.lockSum100 = !!lock;
+      $('#lockSum').checked = state.lockSum100;
+
+      renderConfigSelect();
+      renderList();
+
+      // Events
+      $('#configSelect').addEventListener('change', (e) => {
+        state.activeId = e.target.value;
+        saveConfigs(state.configs, state.activeId);
+        renderList();
+      });
+      $('#themeBtn').addEventListener('click', () => {
+        const newTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+        setTheme(newTheme);
+      });
+      $('#rollBtn').addEventListener('click', rollOnce);
+      $('#addBtn').addEventListener('click', addPractice);
+      $('#normalizeBtn').addEventListener('click', () => normalizeWeights(100));
+      $('#saveBtn').addEventListener('click', () => saveActive(false));
+      $('#saveAsBtn').addEventListener('click', () => saveActive(true));
+      $('#exportBtn').addEventListener('click', exportConfigs);
+      $('#importBtn').addEventListener('click', importConfigs);
+      $('#resetBtn').addEventListener('click', resetToDefault);
+      $('#respectBlocked').addEventListener('change', updateProbPreview);
+      $('#showDetails').addEventListener('change', () => {
+        $('#details').classList.toggle('show', $('#showDetails').checked);
+      });
+      $('#lockSum').addEventListener('change', (e) => {
+        state.lockSum100 = e.target.checked;
+        localStorage.setItem(LS_KEYS.lock, state.lockSum100 ? '1' : '0');
+        if (state.lockSum100) {
+          // При включении — мягко привести к 100, сохранив пропорции
+          normalizeWeights(100);
+        }
+      });
+
+      const first = state.active?.items?.[0];
+      if (first) showResult(first);
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
